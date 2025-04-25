@@ -1,0 +1,20 @@
+{
+    "review": "I glad to chat with you",
+    "rating": 4
+}
+{
+    "rating": 5,
+    "review": "i like interting with you"
+}
+{
+    "rating": 4,
+    "review": "okay"
+}
+{
+    "review": "I like it",
+    "rating": 4
+}
+{
+    "rating": 5,
+    "review": "i like your answer thank you."
+}

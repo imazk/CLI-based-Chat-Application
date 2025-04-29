@@ -22,3 +22,35 @@
     "rating": 5,
     "review": "I like the joke"
 }
+{
+    "rating": 4,
+    "review": "i like it"
+}
+{
+    "rating": 5,
+    "review": "End of conversation"
+}
+{
+    "review": "End of conversation.",
+    "rating": 5
+}
+{
+    "rating": 5,
+    "review": "Great interaction!"
+}
+{
+    "review": "End of conversation.",
+    "rating": 5
+}
+{
+    "rating": 5,
+    "review": "Great conversation!"
+}
+{
+    "review": "5",
+    "rating": 5
+}
+{
+    "review": "i like intercting with you",
+    "rating": 5
+}

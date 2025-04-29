@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 from dotenv import load_dotenv
 from google import genai
@@ -39,52 +40,10 @@ def chat_with_gemini(user_message):
     """ Sends user message to Gemini API and returns the response. """
     response = client.models.generate_content(
         model="gemini-2.0-flash",
-        contents=[user_message]
+        contents=[user_message],
+        config=config
     )
     return response.candidates[0].content.parts[0].text if response.candidates else "No response received."
-
-
-def collect_review():
-    """Collects review and rating manually before invoking Gemini API."""
-    
-    review = input("Your feedback: ")
-    while True:
-        try:
-            rating = int(input("Rate your chat experience (1-5): "))
-            if 1 <= rating <= 5:
-                break
-            else:
-                print("Please enter a valid rating between 1 and 5.")
-        except ValueError:
-            print("Invalid input. Please enter a number between 1 and 5.")
-
-    review_prompt = (
-        f"Invoke 'collect_review' function with the following details:\n"
-        f"{{'review': '{review}', 'rating': {rating}}}"
-    )
-
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=[review_prompt],
-        config=config,
-    )
-
-    if response.candidates and response.candidates[0].content.parts:
-        part = response.candidates[0].content.parts[0]
-
-        if hasattr(part, "function_call") and part.function_call:
-            function_call = part.function_call
-
-            feedback = function_call.args if hasattr(function_call, "args") else None
-            if feedback:
-                save_feedback(feedback)
-            else:
-                print("Function call detected, but no arguments received.")
-        else:
-            print("No function call detected. Saving manually.")
-            save_feedback({'review': review, 'rating': rating})
-    else:
-        print("Unexpected API response format.")
 
 
 def save_feedback(feedback):
@@ -93,35 +52,72 @@ def save_feedback(feedback):
         file.write(json.dumps(feedback, indent=4) + "\n")
     print("Thank you! Your feedback has been saved.")
 
+
 def check_exit_intent(user_message):
-    """Sends the user message to Gemini and asks if the user wants to exit."""
-    prompt = f"Does the following user message indicate an intent to end the conversation? Respond with 'yes' or 'no'.\n\nUser: {user_message}"
+    """Checks if the user wants to exit the chat."""
+    prompt = f"""
+    Determine if the following user message indicates an intent to end the conversation.
+    Respond with 'yes' if the user wants to exit, otherwise respond with 'no'.
+    User: {user_message}
+    """
     response = client.models.generate_content(
         model="gemini-2.0-flash",
         contents=[prompt]
     )
 
-    exit_phrases = ["bye", "exit", "end chat", "i want to leave"]
     if response.candidates and response.candidates[0].content.parts:
         exit_intent = response.candidates[0].content.parts[0].text.strip().lower()
-        if "yes" in exit_intent:
-            print("Say bye, exit, or end chat, If you want to leave the chat.")
-            if user_message.lower() in exit_phrases:
-                return True
+        return "yes" in exit_intent
     return False
+
+
+def ask_question_to_user(question_text):
+    """Generates a natural-sounding question from Gemini."""
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=[question_text]
+    )
+    return response.candidates[0].content.parts[0].text.strip()
+
+
+def collect_review_chat():
+    """Interactively collects review and rating from the user."""
+    print("\nBefore you go, could you please provide some feedback?")
+
+    review_question = ask_question_to_user("Ask the user how their chatbot experience was.")
+    print(f"CLI ChatBot: {review_question}")
+    review = input("> ")
+
+    while True:
+        rating_question = ask_question_to_user("Ask the user to rate the chatbot experience on a scale from 1 to 5.")
+        print(f"CLI ChatBot: {rating_question}")
+        try:
+            rating = int(input("> "))
+            if 1 <= rating <= 5:
+                break
+            else:
+                print("Please enter a number between 1 and 5.")
+        except ValueError:
+            print("Please enter a valid number.")
+
+    feedback = {
+        "review": review,
+        "rating": rating
+    }
+    save_feedback(feedback)
 
 
 def main():
     print("Welcome to the CLI Chatbot! Type your messages below.")
     while True:
         user_input = input("> ")
-
-        if check_exit_intent(user_input):
-            print("ChatBot: Before you leave, Kindly give your feedback.")
-            collect_review()
-            break
         response = chat_with_gemini(user_input)
         print(f"CLI ChatBot: {response}")
+
+        if check_exit_intent(user_input):
+            collect_review_chat()
+            break
+
 
 if __name__ == "__main__":
     main()
